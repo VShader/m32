@@ -21,6 +21,8 @@ void m32_cpu::run()
 
 bool m32_cpu::step()
 {
+    if(callback_before_exec)
+        callback_before_exec();
     // TODO: Check interrupts and process timers before executing
     if(registers[pc]>65536)
     {
@@ -31,6 +33,9 @@ bool m32_cpu::step()
     print_status();
     if(!res)
         pause();
+    if(callback_after_exec)
+        callback_after_exec();
+
     return res;
 }
 
@@ -121,9 +126,6 @@ void m32_cpu::spush(m32_word data)
 
 void m32_cpu::print_status()
 {
-    if(!print_callback)
-        return;
-
     stringstream out;
     out.fill('0');
     out<<"M32 CPU STATUS:"<<endl
@@ -132,13 +134,11 @@ void m32_cpu::print_status()
        <<"R4: "<<setw(8)<<hex<<registers[r4]<<" "<<"R5: "<<setw(8)<<hex<<registers[r5]<<endl
        <<"R6: "<<setw(8)<<hex<<registers[r6]<<" "<<"R7: "<<setw(8)<<hex<<registers[r7]<<endl
        <<"PC: "<<setw(8)<<hex<<registers[pc]<<endl;
-    print_callback(out.str());
+    info(out.str());
 }
 
 void m32_cpu::print_memory(m32_word start, m32_word count)
 {
-    if(!print_callback)
-        return;
     stringstream out;
     out.fill('0');
     out<<"MEMORY DUMP ("<<setw(8)<<hex<<count<<" BYTES FROM "<<setw(8)<<hex<<start<<")"<<endl;
@@ -348,10 +348,11 @@ bool m32_cpu::execute(m32_word data)
         op1->decode(param1);
         m32_word op1_val=op1->read();
         std::stringstream sstream;
-        sstream<<std::hex<<op1_val<<"H";
+        sstream.fill('0');
+        sstream<<std::hex<<std::setw(8)<<std::uppercase<<op1_val<<"H";
 
-        if(print_callback)
-            print_callback(sstream.str());
+        if(callback_print)
+            callback_print(sstream.str());
     }
         break;
     case m32_halt:
@@ -370,8 +371,8 @@ bool m32_cpu::execute(m32_word data)
             out<<(char)data;
             data=mmu->read(op1_val++);
         }
-        if(print_callback)
-            print_callback(out.str());
+        if(callback_print)
+            callback_print(out.str());
 
     }
         break;
@@ -389,8 +390,8 @@ bool m32_cpu::execute(m32_word data)
             data=mmu->read(op1_val++);
         }
         out<<"\n";
-        if(print_callback)
-            print_callback(out.str());
+        if(callback_print)
+            callback_print(out.str());
 
     }
         break;
@@ -409,7 +410,7 @@ m32_word m32_cpu::m32_mmu::read(m32_word address)
     m32_register base_register=cpu->user_mode()?ubase:sbase;
     m32_word r_limit=cpu->registers[limit_register];
     if(r_limit==0||(r_limit!=0&&address<=r_limit))
-        return cpu->memory[address+cpu->registers[limit_register]];
+        return cpu->memory[address+cpu->registers[base_register]];
     else
         cpu->mmu_fault();
     return 0;

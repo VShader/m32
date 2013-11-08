@@ -85,7 +85,6 @@ public:
     bool user_mode() { return (registers[status]&(1<<16)); }
     bool system_mode() { return !user_mode(); }
     void mmu_fault() { registers[status]|=(1<<17); pause(); }
-    std::function<void(std::string)> print_callback;
     m32_word pop();
     void push(m32_word data);
     m32_word upop();
@@ -95,11 +94,16 @@ public:
     void print_status();
     void print_memory(m32_word start, m32_word count);
 
+    std::function<void(std::string)> callback_print;
+    std::function<void(std::string)> callback_log;
+    std::function<void()> callback_before_exec;
+    std::function<void()> callback_after_exec;
+    std::function<void(m32_word)> callback_mmu_read;
+    std::function<void(m32_word)> callback_mmu_write;
+
     m32_word memory[65536];
-
-private:
     m32_register registers[32];
-
+private:
     class m32_mmu
     {
     public:
@@ -133,9 +137,9 @@ private:
         m32_word value;
     };
 
-    void info(std::string message) { std::stringstream out; out<<message<<std::endl; if(print_callback) print_callback(out.str()); }
-    void error(std::string message) { std::stringstream out; out<<"[ERROR] "<<message<<std::endl; if(print_callback) print_callback(out.str()); }
-    void debug(std::string message) { std::stringstream out; out<<"[DEBUG] "<<message<<std::endl; if(print_callback) print_callback(out.str()); }
+    void info(std::string message) { std::stringstream out; out<<message<<std::endl; if(callback_log) callback_log(out.str()); }
+    void error(std::string message) { std::stringstream out; out<<"[ERROR] "<<message<<std::endl; if(callback_log) callback_log(out.str()); }
+    void debug(std::string message) { std::stringstream out; out<<"[DEBUG] "<<message<<std::endl; if(callback_log) callback_log(out.str()); }
     void set_bit(unsigned int reg_no, unsigned int bit, bool value) { registers[reg_no]&=~(1<<bit); registers[reg_no]|=(value<<bit); }
     bool get_bit(unsigned int reg_no, unsigned int bit) { return registers[reg_no]&(1<<bit); }
     void set_zero_bit(bool value) { set_bit(status,0,value); }
