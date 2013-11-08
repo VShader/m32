@@ -23,7 +23,10 @@ bool m32_cpu::step()
 {
     // TODO: Check interrupts and process timers before executing
     if(registers[pc]>65536)
+    {
+        error("Access outside of allowed memory range");
         pause();
+    }
     bool res=execute(memory[registers[pc]++]);
     print_status();
     if(!res)
@@ -80,58 +83,40 @@ void m32_cpu::load(string file_name)
 
 }
 
-unsigned int m32_cpu::map_usermode_register(unsigned int reg_no)
-{
-    if((reg_no&0x02)==0)
-        return(reg_no);
-    if(user_mode())
-        return(reg_no-1);
-    return(reg_no-2);
-}
-
-m32_word m32_cpu::read_register(unsigned int reg_no)
-{
-    if((reg_no&0x10)!=0)
-        reg_no=map_usermode_register(reg_no);
-    int value=registers[reg_no];
-    return value;
-}
-
-void m32_cpu::write_register(unsigned int reg_no, m32_word value)
-{
-    if((reg_no&0x10)!=0)
-        reg_no=map_usermode_register(reg_no);
-    registers[reg_no]=value;
-}
-
 m32_word m32_cpu::pop()
 {
-    m32_word pop_addr=read_register(sp)+1;
-    m32_word data=mmu->read(pop_addr);
-    write_register(sp,pop_addr);
-    return data;
+    if(user_mode())
+        return upop();
+    else
+        return spop();
 }
 
 void m32_cpu::push(m32_word data)
 {
-    m32_word push_addr=read_register(sp);
-    mmu->write(push_addr,data);
-    write_register(sp,push_addr-1);
+    if(user_mode())
+        upush(data);
+    else
+        spush(data);
+}
+
+m32_word m32_cpu::upop()
+{
+    return mmu->read(++registers[usp]);
+}
+
+void m32_cpu::upush(m32_word data)
+{
+    mmu->write(registers[usp]--,data);
 }
 
 m32_word m32_cpu::spop()
 {
-    m32_word pop_addr=read_register(ssp)+1;
-    m32_word data=mmu->read(pop_addr);
-    write_register(ssp,pop_addr);
-    return data;
+    return mmu->read(++registers[ssp]);
 }
 
 void m32_cpu::spush(m32_word data)
 {
-    m32_word push_addr=read_register(ssp);
-    mmu->write(push_addr,data);
-    write_register(ssp,push_addr-1);
+    mmu->write(registers[ssp]--,data);
 }
 
 void m32_cpu::print_status()
@@ -316,7 +301,7 @@ bool m32_cpu::execute(m32_word data)
         op1->decode(param1);
         m32_word op1_val=op1->read();
         if((registers[status]&3)==2) // zero bit and greater equal bit set
-            write_register(pc,op1_val);
+            registers[pc]=op1_val;
     }
         break;
     case m32_jz:
@@ -324,15 +309,15 @@ bool m32_cpu::execute(m32_word data)
         op1->decode(param1);
         m32_word op1_val=op1->read();
         if(get_bit(status,0)) // zero bit set
-            write_register(pc,op1_val);
+            registers[pc]=op1_val;
     }
         break;
     case m32_call:
     {
         op1->decode(param1);
         m32_word jmp_addr=op1->read();
-        push(read_register(pc));
-        write_register(pc,jmp_addr);
+        push(registers[pc]);
+        registers[pc]=jmp_addr;
     }
         break;
     case m32_ret:
@@ -343,18 +328,17 @@ bool m32_cpu::execute(m32_word data)
         break;
     case m32_int:
     {
-        spush(read_register(status));
-        spush(read_register(pc));
+        spush(registers[status]);
+        spush(registers[pc]);
         set_user_bit(false);
         m32_word offset=data&0x0F;
-        m32_word new_pc=mmu->read(read_register(intbase)+offset);
-        write_register(pc,new_pc);
+        registers[pc]=mmu->read(registers[intbase]+offset);
     }
         break;
     case m32_reti:
     {
-        write_register(pc,spop());
-        write_register(status,spop());
+        registers[pc]=spop();
+        registers[status]=spop();
     }
         break;
     case m32_trap:
@@ -421,85 +405,75 @@ bool m32_cpu::execute(m32_word data)
 
 m32_word m32_cpu::m32_mmu::read(m32_word address)
 {
-    if(cpu->user_mode())
-    {
-        m32_register r_ulimit=cpu->registers[ulimit];
-        if(r_ulimit==0||(r_ulimit!=0&&address<=r_ulimit))
-            return cpu->memory[address+cpu->registers[ubase]];
-        else
-            cpu->mmu_fault();
-    }
+    m32_register limit_register=cpu->user_mode()?ulimit:slimit;
+    m32_register base_register=cpu->user_mode()?ubase:sbase;
+    m32_word r_limit=cpu->registers[limit_register];
+    if(r_limit==0||(r_limit!=0&&address<=r_limit))
+        return cpu->memory[address+cpu->registers[limit_register]];
     else
-    {
-        m32_register r_slimit=cpu->registers[slimit];
-        if(r_slimit==0||(r_slimit!=0&&address<=r_slimit))
-            return cpu->memory[address+cpu->registers[sbase]];
-        else
-            cpu->mmu_fault();
-    }
+        cpu->mmu_fault();
     return 0;
 }
 
 void m32_cpu::m32_mmu::write(m32_word address, m32_word data)
 {
-    if(cpu->user_mode())
-    {
-        m32_register r_ulimit=cpu->registers[ulimit];
-        if(r_ulimit==0||(r_ulimit!=0&&address<=r_ulimit))
-            cpu->memory[address+cpu->registers[ubase]]=data;
-        else
-            cpu->mmu_fault();
-    }
+    m32_register limit_register=cpu->user_mode()?ulimit:slimit;
+    m32_register base_register=cpu->user_mode()?ubase:sbase;
+    m32_word r_limit=cpu->registers[limit_register];
+    if(r_limit==0||(r_limit!=0&&address<=r_limit))
+        cpu->memory[address+cpu->registers[base_register]]=data;
     else
-    {
-        m32_register r_slimit=cpu->registers[slimit];
-        if(r_slimit==0||(r_slimit!=0&&address<=r_slimit))
-            cpu->memory[address+cpu->registers[sbase]]=data;
-        else
-            cpu->mmu_fault();
-    }
+        cpu->mmu_fault();
 }
 
 void m32_cpu::m32_operand::decode(m32_op_param param)
 {
+    /*  Type bits: baarrrrr
+     *             76543210
+     *  b=Indexed
+     *  a=Adressing type:
+     *  00 (0) = Register
+     *  01 (1) = Literal Value
+     *  10 (2) = Address
+     *  11 (3) = Stack
+     *
+     *  r=Register number
+     */
     unsigned char reg_no;
     type=(target_type)((param>>5)&7);
     reg_no=(m32_op_param)(param&0x1F);
-    if(type==target_reg)
+    if(type==target_reg) // register
     {
         value=reg_no;
     }
-    else if((type==target_value)&(reg_no==0))
+    else if((type==target_value)&(reg_no==0)) // memory
     {
-        value=mmu->read(cpu->registers[pc]);
-        cpu->registers[pc]++;
+        value=mmu->read(cpu->registers[pc]++);
     }
-    else if((type==target_value)&(reg_no==3))
+    else if((type==target_value)&(reg_no==3)) // stack
     {
         type=target_stack;
     }
-    else if(((type&3)==1)&(reg_no==2))
+    else if(((type&0x03)==target_value)&(reg_no==2)) // register addressing, type=...01b
     {
         type=target_addr;
-        value=mmu->read(cpu->registers[pc]) ;
-        cpu->registers[pc]++;
-        if((type&4)==4)
-            value=indexed(value) ;
-    } // absolute
-    else if((type&3)==2)
+        value=mmu->read(cpu->registers[pc]++);
+        if(type&(1<<3)) // test index bit, type=...0101b
+            indexed(value);
+    }
+    else if((type&3)==target_addr) // register relative addressing, type=...10b
     {
         type=target_addr;
-        // wrong:         value=cpu_regs[reg_no] ;
         value=cpu->read_register(reg_no);
-        int dsp=mmu->read(cpu->registers[pc]) ;
-        cpu->registers[pc]++;
-        value=value+dsp;
-        if ((type&4)==4)
-            value=indexed(value) ;
-    } // end reg relative
+        int offset=mmu->read(cpu->registers[pc]++);
+        value+=offset;
+        if (type&(1<<3)) // text index bit, type=...0110b
+            indexed(value);
+    }
     else
     {
-        // unknown type
+        cpu->error("Unknow addressing scheme!");
+        cpu->pause();
     }
 }
 
@@ -553,9 +527,7 @@ void m32_cpu::m32_operand::write(m32_word data)
     }
 }
 
-m32_word m32_cpu::m32_operand::indexed(m32_word address)
+void m32_cpu::m32_operand::indexed(m32_word address)
 {
-    value=mmu->read(cpu->registers[pc]);
-    cpu->registers[pc]++;
-    return address+cpu->registers[value];
+    value=address+mmu->read(cpu->registers[pc]++);
 }

@@ -85,12 +85,11 @@ public:
     bool user_mode() { return (registers[status]&(1<<16)); }
     bool system_mode() { return !user_mode(); }
     void mmu_fault() { registers[status]|=(1<<17); pause(); }
-    unsigned int map_usermode_register(unsigned int reg_no);
-    m32_word read_register(unsigned int reg_no);
-    void write_register(unsigned int reg_no, m32_word value);
     std::function<void(std::string)> print_callback;
     m32_word pop();
     void push(m32_word data);
+    m32_word upop();
+    void upush(m32_word data);
     m32_word spop();
     void spush(m32_word data);
     void print_status();
@@ -127,7 +126,7 @@ private:
         void write(m32_word data);
         target_type type;
     private:
-        m32_word indexed(m32_word address);
+        void indexed(m32_word address);
         m32_mmu *mmu;
         m32_cpu *cpu;
 
@@ -143,6 +142,9 @@ private:
     void set_greater_equal_bit(bool value) { set_bit(status,1,value); }
     void set_timer_run_bit(bool value) { set_bit(status,8,value); }
     void set_user_bit(bool value) { set_bit(status,16,value); }
+    m32_register map_stack_to_mode(){ return sp-2+user_mode(); }
+    m32_word read_register(unsigned int reg_no) { if(reg_no==sp) return registers[map_stack_to_mode()]; else return registers[reg_no]; }
+    void write_register(unsigned int reg_no, m32_word value) { if(reg_no==sp) registers[map_stack_to_mode()]=value; else registers[reg_no]=value; }
 
     bool execute(m32_word data);
     bool running;
