@@ -30,7 +30,7 @@ bool m32_cpu::step()
         pause();
     }
     bool res=execute(memory[registers[pc]++]);
-    print_status();
+    //print_status();
     if(!res)
         pause();
     if(callback_after_exec)
@@ -72,7 +72,9 @@ void m32_cpu::load(string file_name)
     size_t size=input.tellg();
     size_t word_bytes=sizeof(m32_word);
     size_t words=size/word_bytes;
-    cout<<"IMAGE SIZE IS: "<<size<<"BYTES ("<<words<<" M32 WORDS)..."<<endl;
+    std::stringstream msg;
+    msg<<"IMAGE SIZE IS: "<<size<<"BYTES ("<<words<<" M32 WORDS)..."<<endl;
+    info(msg.str());
     input.seekg(0,input.beg);
 
     for(size_t word=0;word<words;word++)
