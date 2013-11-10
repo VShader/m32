@@ -14,11 +14,13 @@ TEMPLATE = app
 SOURCES += \
         main.cpp\
         ide_main_window.cpp \
-    ../m32_cpu/m32_cpu.cpp
+    ../m32_cpu/m32_cpu.cpp \
+    code_editor.cpp
 
 HEADERS += \
         ide_main_window.h \
-    ../m32_cpu/m32_cpu.h
+    ../m32_cpu/m32_cpu.h \
+    code_editor.h
 
 INCLUDEPATH += ../m32_cpu
 QMAKE_CXXFLAGS += -std=c++11

@@ -24,8 +24,9 @@ ide_main_window::~ide_main_window()
 
 void ide_main_window::setup_code_editor()
 {
-    txt_code=new QTextEdit();
-    layout_main->addWidget(txt_code,0,0,2,1);
+    code=new code_editor();
+
+    layout_main->addWidget(code,0,0,2,1);
     layout_main->setRowStretch(1,1);
     layout_main->setColumnStretch(0,1);
 }
@@ -143,27 +144,27 @@ void ide_main_window::setup_memory_monitor()
 
 void ide_main_window::setup_cpu_output_log()
 {
-    txt_cpu_log=new QTextEdit();
+    txt_cpu_log=new QPlainTextEdit();
     txt_cpu_log->setReadOnly(true);
     dw_cpu_output=new QDockWidget("CPU Output",this);
     dw_cpu_output->setAllowedAreas(Qt::BottomDockWidgetArea|Qt::RightDockWidgetArea);
     dw_cpu_output->setWidget(txt_cpu_log);
     addDockWidget(Qt::BottomDockWidgetArea,dw_cpu_output);
     cpu->callback_print=[&](std::string msg){
-        txt_cpu_log->append(QString::fromStdString(msg));
+        txt_cpu_log->appendPlainText(QString::fromStdString(msg));
     };
 }
 
 void ide_main_window::setup_cpu_info_log()
 {
-    txt_cpu_info=new QTextEdit();
+    txt_cpu_info=new QPlainTextEdit();
     txt_cpu_info->setReadOnly(true);
     dw_cpu_info=new QDockWidget("CPU Information",this);
     dw_cpu_info->setAllowedAreas(Qt::BottomDockWidgetArea|Qt::RightDockWidgetArea);
     dw_cpu_info->setWidget(txt_cpu_info);
     addDockWidget(Qt::BottomDockWidgetArea,dw_cpu_info);
     cpu->callback_log=[&](std::string msg){
-        txt_cpu_info->append(QString::fromStdString(msg));
+        txt_cpu_info->appendPlainText(QString::fromStdString(msg));
     };
 }
 
