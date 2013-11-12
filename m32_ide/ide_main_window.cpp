@@ -1,5 +1,4 @@
 #include "ide_main_window.h"
-#include "ui_ide_main_window.h"
 
 ide_main_window::ide_main_window(QWidget *parent) : QMainWindow(parent)
 {

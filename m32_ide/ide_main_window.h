@@ -9,6 +9,9 @@
 #include <QFileDialog>
 #include <QPlainTextEdit>
 #include <QDockWidget>
+#include <QGroupBox>
+#include <QMenu>
+#include <QMenuBar>
 
 #include "m32_cpu.h"
 #include "code_editor.h"
