@@ -1,6 +1,6 @@
 #include "code_editor.h"
 
-sidebar_area::sidebar_area(code_editor *editor): editor(editor)
+sidebar_area::sidebar_area(code_editor *editor): QWidget(editor),editor(editor)
 {
 }
 
