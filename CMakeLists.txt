@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.9)
 project(m32)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 add_subdirectory(m32_cpu)
+add_subdirectory(m32_ide)
 
 set(CMAKE_BUILD_TYPE "Debug")
 set(CMake_VERSION_MAJOR "0")
