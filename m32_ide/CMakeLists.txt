@@ -9,15 +9,15 @@ set(CMAKE_AUTOMOC ON)
 # Find the QtWidgets library
 find_package(Qt5Widgets REQUIRED)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../m32_cpu)
-set(qt_Header "ide_main_window.h" "code_editor.h" "${CMAKE_CURRENT_SOURCE_DIR}/../m32_cpu/m32_cpu.cpp")
+set(libM32CPU ${CMAKE_CURRENT_SOURCE_DIR}/../libM32CPU)
+include_directories(${libM32CPU})
+link_directories(${libM32CPU})
+set(qt_Header "ide_main_window.h" "code_editor.h" "${CMAKE_CURRENT_SOURCE_DIR}/../libM32CPU/m32_cpu.cpp")
 set(qt_Sources "main.cpp" "ide_main_window.cpp" "code_editor.cpp")
-
-#qt5_wrap_cpp(qt_Header ${qt_Header})
-#qt5_wrap_cpp(qt_Sources ${qt_Sources})
 
 
 add_executable(${PROJECT_NAME} ${qt_Sources} ${qt_Header})
+target_link_libraries(${PROJECT_NAME} libM32CPU)
 # Use the Widgets module from Qt 5.
 qt5_use_modules(${PROJECT_NAME} Widgets)
 

@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(m32)
 
-set(CMAKE_BUILD_TYPE Debug)
+message(${CMAKE_BUILD_TYPE})
 
+add_subdirectory(libM32CPU)
 add_subdirectory(m32_cpu)
 add_subdirectory(m32_ide)
 
-set(CMAKE_BUILD_TYPE "Debug")
 set(CMake_VERSION_MAJOR "0")
 set(CMake_VERSION_MINOR "1")
 
