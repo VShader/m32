@@ -21,15 +21,58 @@ void m32_cpu::run()
 
 bool m32_cpu::step()
 {
+    bool do_interrupt=false;
+    m32_word opcode;
+    std::function<m32_word(m32_word,m32_word)> check_interrupt=[&](m32_word bit, m32_word offset)
+    {
+        if(do_interrupt)
+            return (m32_word)0;
+        else if(get_bit(intflags,bit))
+        {
+            set_bit(intflags,bit,false);
+            do_interrupt=true;
+            return m32_int+offset;
+        }
+        else
+            return (m32_word)0;
+    };
+
     if(callback_before_exec)
         callback_before_exec();
+
     // TODO: Check interrupts and process timers before executing
+    if(get_bit(status,bit_timer_run)) // timer enabled
+    {
+        m32_word timer_value=registers[timer];
+        if(timer_value==0)
+        {
+            set_bit(intflags,bit_timer_interrupt,true);
+            timer_value=registers[treload];
+        }
+        else
+            timer_value--;
+        registers[timer]=timer_value;
+    }
+
+    if(int_enabled())
+    {
+        if(timer_int_enabled())
+            opcode=check_interrupt(bit_timer_interrupt,intbase_offset_timer);
+        if(int1_enabled())
+            opcode=check_interrupt(bit_external_interrupt_1,intbase_offset_external_1);
+        if(int2_enabled())
+            opcode=check_interrupt(bit_external_interrupt_2,intbase_offset_external_2);
+    }
+
+    if(!do_interrupt)
+        opcode=memory[registers[pc]++];
+
     if(registers[pc]>65536)
     {
         error("Access outside of allowed memory range");
         pause();
     }
-    bool res=execute(memory[registers[pc]++]);
+    bool res=execute(opcode);
     //print_status();
     if(!res)
         pause();
@@ -412,7 +455,12 @@ m32_word m32_cpu::m32_mmu::read(m32_word address)
     m32_register base_register=cpu->user_mode()?ubase:sbase;
     m32_word r_limit=cpu->registers[limit_register];
     if(r_limit==0||(r_limit!=0&&address<=r_limit))
-        return cpu->memory[address+cpu->registers[base_register]];
+    {
+        m32_word real_address=address+cpu->registers[base_register];
+        if(cpu->callback_mmu_read)
+            cpu->callback_mmu_read(real_address);
+        return cpu->memory[real_address];
+    }
     else
         cpu->mmu_fault();
     return 0;
@@ -424,7 +472,13 @@ void m32_cpu::m32_mmu::write(m32_word address, m32_word data)
     m32_register base_register=cpu->user_mode()?ubase:sbase;
     m32_word r_limit=cpu->registers[limit_register];
     if(r_limit==0||(r_limit!=0&&address<=r_limit))
-        cpu->memory[address+cpu->registers[base_register]]=data;
+    {
+        m32_word real_address=address+cpu->registers[base_register];
+        if(cpu->callback_mmu_write)
+            cpu->callback_mmu_write(real_address);
+        cpu->memory[real_address]=data;
+    }
+
     else
         cpu->mmu_fault();
 }

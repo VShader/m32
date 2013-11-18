@@ -66,6 +66,33 @@ enum m32_registers
     ulimit=25
 };
 
+enum m32_status_bits
+{
+    bit_zero=0,
+    bit_greater_equal=1,
+    bit_timer_run=7,
+    bit_user_mode=15,
+    bit_mmu_error=16
+};
+
+enum m32_intflags_bits
+{
+    bit_interrupts_enabled=0,
+    bit_timer_interrupt_enabled=1,
+    bit_timer_interrupt=2,
+    bit_external_interrupt_1_enabled=3,
+    bit_external_interrupt_1=4,
+    bit_external_interrupt_2_enabled=5,
+    bit_external_interrupt_2=6
+};
+
+enum intbase_offset
+{
+    intbase_offset_timer=0,
+    intbase_offset_external_1=1,
+    intbase_offset_external_2=2
+};
+
 class m32_cpu
 {
 public:
@@ -76,15 +103,15 @@ public:
     void reset();
     bool is_running();
     void load(std::string file_name);
-    void signal_ext1() { registers[intflags]|=(1<<4); }
-    void signal_ext2() { registers[intflags]|=(1<<6); }
-    bool int_enabled() { return (registers[intflags]&(1<<0)); }
-    bool int1_enabled() { return (registers[intflags]&(1<<3)); }
-    bool int2_enabled() { return (registers[intflags]&(1<<5)); }
-    bool timer_enabled() { return (registers[intflags]&(1<<1)); }
-    bool user_mode() { return (registers[status]&(1<<16)); }
+    void signal_ext1() { set_bit(intflags,bit_external_interrupt_1,true); }
+    void signal_ext2() { set_bit(intflags,bit_external_interrupt_2,true); }
+    bool int_enabled() { return get_bit(intflags,bit_interrupts_enabled); }
+    bool int1_enabled() { return get_bit(intflags,bit_external_interrupt_1_enabled); }
+    bool int2_enabled() { return get_bit(intflags,bit_external_interrupt_2_enabled); }
+    bool timer_int_enabled() { return get_bit(intflags,bit_timer_interrupt_enabled); }
+    bool user_mode() { return get_bit(status,bit_user_mode); }
     bool system_mode() { return !user_mode(); }
-    void mmu_fault() { registers[status]|=(1<<17); pause(); }
+    void mmu_fault() { set_bit(status,bit_mmu_error,true); pause(); }
     m32_word pop();
     void push(m32_word data);
     m32_word upop();
@@ -142,10 +169,10 @@ private:
     void debug(std::string message) { std::stringstream out; out<<"[DEBUG] "<<message<<std::endl; if(callback_log) callback_log(out.str()); }
     void set_bit(unsigned int reg_no, unsigned int bit, bool value) { registers[reg_no]&=~(1<<bit); registers[reg_no]|=(value<<bit); }
     bool get_bit(unsigned int reg_no, unsigned int bit) { return registers[reg_no]&(1<<bit); }
-    void set_zero_bit(bool value) { set_bit(status,0,value); }
-    void set_greater_equal_bit(bool value) { set_bit(status,1,value); }
-    void set_timer_run_bit(bool value) { set_bit(status,8,value); }
-    void set_user_bit(bool value) { set_bit(status,16,value); }
+    void set_zero_bit(bool value) { set_bit(status,bit_zero,value); }
+    void set_greater_equal_bit(bool value) { set_bit(status,bit_greater_equal,value); }
+    void set_timer_run_bit(bool value) { set_bit(status,bit_timer_run,value); }
+    void set_user_bit(bool value) { set_bit(status,bit_user_mode,value); }
     m32_register map_stack_to_mode(){ return sp-2+user_mode(); }
     m32_word read_register(unsigned int reg_no) { if(reg_no==sp) return registers[map_stack_to_mode()]; else return registers[reg_no]; }
     void write_register(unsigned int reg_no, m32_word value) { if(reg_no==sp) registers[map_stack_to_mode()]=value; else registers[reg_no]=value; }
