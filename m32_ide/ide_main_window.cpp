@@ -1,3 +1,5 @@
+#include <QMessageBox>
+#include "m32Config.h"
 #include "ide_main_window.h"
 
 ide_main_window::ide_main_window(QWidget *parent) : QMainWindow(parent)
@@ -19,6 +21,7 @@ ide_main_window::ide_main_window(QWidget *parent) : QMainWindow(parent)
 
 ide_main_window::~ide_main_window()
 {
+    delete aboutAction;
 }
 
 void ide_main_window::setup_code_editor()
@@ -211,6 +214,29 @@ void ide_main_window::setup_debug_buttons()
     });
 }
 
+void ide_main_window::setup_action()
+{
+    aboutAction = new QAction(tr("About"), this);
+    aboutAction->setStatusTip(tr("Show the version of M32"));
+    connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
+}
+
+void ide_main_window::about()
+{
+    float v = m32_VERSION_MAJOR+0.1*m32_VERSION_MINOR;
+    QString version("<h2>M32 ");
+    version.append(QString::number(v));
+                      version.append("</h2>"
+                                     "<p>M32 is virtual 32 Bit CPU "
+                                     "designed by "
+                                     "<a href=www.ossmann.fh-aachen.de>Prof. Dr.-Ing. Martin Ossmann </a><br/>"
+                                     "and implemented by Daniel Schulte.</p>"
+                                     "<p>Find the latest version on <a href=www.github.com/trilader>github.com"
+                                     "</a>.</p>");
+    QMessageBox::about(this, tr("About M32"),
+                       tr(version.toLocal8Bit().data()));
+}
+
 void ide_main_window::setup_menu_bar()
 {
     QMenu *menu_file=new QMenu("File");
@@ -223,4 +249,6 @@ void ide_main_window::setup_menu_bar()
     menu_view->addAction(dw_debug_controls->toggleViewAction());
     menu_view->addAction(dw_cpu_output->toggleViewAction());
     menu_view->addAction(dw_cpu_info->toggleViewAction());
+
+    menu_help->addAction(aboutAction);
 }
