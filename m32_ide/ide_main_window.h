@@ -23,8 +23,6 @@ class ide_main_window : public QMainWindow
 public:
     explicit ide_main_window(QWidget *parent = 0);
     ~ide_main_window();
-public slots:
-    void about();
 private:
     void setup_code_editor();
 
