@@ -223,11 +223,13 @@ void ide_main_window::setup_action()
     {
         float v = m32_VERSION_MAJOR+0.1*m32_VERSION_MINOR;
         QString about_text=QString("<h2>M32 %1</h2>"
-                           "<p>M32 is a virtual 32 Bit CPU designed by "
-                           "<a href=www.ossmann.fh-aachen.de>Prof. Dr.-Ing. Martin Ossmann</a><br/>"
-                           "and implemented in C++ by Daniel Schulte.</p>"
-                           "<p>Find the latest version on <a href=www.github.com/trilader/m32>github.com"
-                           "</a>.</p>").arg(v);
+                                   "<table><tr>"
+                                   "<td>ICON HERE</td>"
+                                   "<td><p>M32 is a virtual 32 Bit CPU designed by "
+                                   "<a href=www.ossmann.fh-aachen.de>Prof. Dr.-Ing. Martin Ossmann</a><br/>"
+                                   "and implemented in C++ by Daniel Schulte.</p>"
+                                   "<p>Find the latest version on <a href=www.github.com/trilader/m32>github.com"
+                                   "</a>.</p></td></tr></table>").arg(v);
         QMessageBox::about(this, tr("About M32"),tr(about_text.toLocal8Bit().data()));
     });
 }
