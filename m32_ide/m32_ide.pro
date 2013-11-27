@@ -20,7 +20,8 @@ SOURCES += \
 HEADERS += \
         ide_main_window.h \
     ../m32_cpu/m32_cpu.h \
-    code_editor.h
+    code_editor.h \
+    ../m32_cpu/m32_defines.h
 
 INCLUDEPATH += ../m32_cpu
 QMAKE_CXXFLAGS += -std=c++11

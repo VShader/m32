@@ -8,6 +8,7 @@ SOURCES += \
     m32_cpu.cpp
 
 HEADERS += \
-    m32_cpu.h
+    m32_cpu.h \
+    m32_defines.h
 
 QMAKE_CXXFLAGS += -std=c++11
