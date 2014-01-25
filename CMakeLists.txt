@@ -9,6 +9,7 @@ message(STATUS ${CMAKE_BUILD_TYPE})
 set(m32_VERSION_MAJOR "0")
 set(m32_VERSION_MINOR "5")
 
+
 #configre a header file to pass the version to the source code.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.h.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.h")

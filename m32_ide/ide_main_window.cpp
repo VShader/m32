@@ -10,6 +10,7 @@ ide_main_window::ide_main_window(QWidget *parent) : QMainWindow(parent)
 
     cpu=new m32_cpu();
 
+    setup_action();
     setup_code_editor();
     setup_register_monitor();
     setup_memory_monitor();
@@ -218,7 +219,7 @@ void ide_main_window::setup_action()
 {
     aboutAction = new QAction(tr("About"), this);
     aboutAction->setStatusTip(tr("Show the version of M32"));
-    connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
+    connect(aboutAction, &QAction::triggered, this, &ide_main_window::about);
 }
 
 void ide_main_window::about()
