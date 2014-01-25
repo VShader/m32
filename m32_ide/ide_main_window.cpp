@@ -7,6 +7,7 @@ ide_main_window::ide_main_window(QWidget *parent) : QMainWindow(parent)
     QWidget *central_widget=new QWidget();
     layout_main=new QGridLayout(central_widget);
     setCentralWidget(central_widget);
+    setWindowTitle("M32 IDE");
 
     cpu=new m32_cpu();
 
@@ -17,12 +18,12 @@ ide_main_window::ide_main_window(QWidget *parent) : QMainWindow(parent)
     setup_cpu_output_log();
     setup_cpu_info_log();
     setup_debug_buttons();
+    setup_action();
     setup_menu_bar();
 }
 
 ide_main_window::~ide_main_window()
 {
-    delete aboutAction;
 }
 
 void ide_main_window::setup_code_editor()
@@ -219,23 +220,20 @@ void ide_main_window::setup_action()
 {
     aboutAction = new QAction(tr("About"), this);
     aboutAction->setStatusTip(tr("Show the version of M32"));
-    connect(aboutAction, &QAction::triggered, this, &ide_main_window::about);
-}
 
-void ide_main_window::about()
-{
-    float v = m32_VERSION_MAJOR+0.1*m32_VERSION_MINOR;
-    QString version("<h2>M32 ");
-    version.append(QString::number(v));
-                      version.append("</h2>"
-                                     "<p>M32 is virtual 32 Bit CPU "
-                                     "designed by "
-                                     "<a href=www.ossmann.fh-aachen.de>Prof. Dr.-Ing. Martin Ossmann </a><br/>"
-                                     "and implemented by Daniel Schulte.</p>"
-                                     "<p>Find the latest version on <a href=www.github.com/trilader>github.com"
-                                     "</a>.</p>");
-    QMessageBox::about(this, tr("About M32"),
-                       tr(version.toLocal8Bit().data()));
+    connect(aboutAction, &QAction::triggered, [this]
+    {
+        float v = m32_VERSION_MAJOR+0.1*m32_VERSION_MINOR;
+        QString about_text=QString("<h2>M32 %1</h2>"
+                                   "<table><tr>"
+                                   "<td>ICON HERE</td>"
+                                   "<td><p>M32 is a virtual 32 Bit CPU designed by "
+                                   "<a href=www.ossmann.fh-aachen.de>Prof. Dr.-Ing. Martin Ossmann</a><br/>"
+                                   "and implemented in C++ by Daniel Schulte.</p>"
+                                   "<p>Find the latest version on <a href=www.github.com/trilader/m32>github.com"
+                                   "</a>.</p></td></tr></table>").arg(v);
+        QMessageBox::about(this, tr("About M32"),tr(about_text.toLocal8Bit().data()));
+    });
 }
 
 void ide_main_window::setup_menu_bar()
